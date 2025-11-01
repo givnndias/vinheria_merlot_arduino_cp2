@@ -1,0 +1,2 @@
+# vinheria_merlot_arduino_cp2
+Sistema embarcado com Arduino Uno para monitorar temperatura, umidade e luminosidade em ambientes de armazenamento de vinhos. Projeto simulado no Tinkercad com display LCD, LEDs e buzzer para alertas. Desenvolvido para a Vinheria Agnello.
