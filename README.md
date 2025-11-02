@@ -68,6 +68,14 @@ O sistema realiza **leituras contínuas** das variáveis ambientais e atua confo
 
 ---
 
+## 📽️ Demonstração
+
+O projeto foi simulado no Wokwi e apresentado em vídeo, mostrando o funcionamento completo do sistema e sua resposta às variações ambientais.
+#Link do vídeo no YouTube:
+#Link da simulação no Wokwi: https://wokwi.com/projects/446078572345766913
+
+---
+
 ## 🧠 Conclusão  
 O projeto **Vinheria Merlot** demonstra a aplicação prática de sistemas embarcados e Internet das Coisas (IoT) no controle ambiental de espaços sensíveis, como adegas. Ele alia sensores, interface física e alertas automatizados, promovendo um monitoramento eficiente, acessível e didático.
 
