@@ -4,10 +4,10 @@
 
 Projeto desenvolvido para monitorar variáveis ambientais em ambientes de armazenamento de vinhos, utilizando **Arduino Uno** e simulação no **Wokwi**. O sistema controla **temperatura**, **luminosidade** e **umidade**, garantindo condições ideais para preservar a qualidade dos produtos da Vinheria Merlot.
 
+---
 
 ## 🎯 Objetivo do Projeto  
-O projeto **Vinheria Merlot** tem como objetivo desenvolver um **sistema de monitoramento ambiental automatizado** para auxiliar na conservação adequada de vinhos em adegas.  
-Utilizando um **Arduino Uno**, sensores de **temperatura**, **umidade** e **luminosidade**, o sistema monitora constantemente o ambiente, exibindo os valores em um **display LCD** e acionando alertas visuais e sonoros caso as condições ideais sejam ultrapassadas.
+O projeto **Vinheria Merlot** tem como objetivo desenvolver um **sistema de monitoramento ambiental automatizado** para auxiliar na conservação adequada de vinhos em adegas. Utilizando um **Arduino Uno**, sensores de **temperatura**, **umidade** e **luminosidade**, o sistema monitora constantemente o ambiente, exibindo os valores em um **display LCD** e acionando alertas visuais e sonoros caso as condições ideais sejam ultrapassadas.
 
 ---
 
@@ -60,6 +60,30 @@ O sistema realiza **leituras contínuas** das variáveis ambientais e atua confo
 
 ---
 
+## 🧭 Diferenciais do Software e Interface
+
+O **diferencial do software da Vinheria Merlot** está na integração entre o **monitoramento automatizado** e a **interação direta com o usuário** via **keypad matricial e display LCD**. Além de exibir dados ambientais em tempo real, o sistema oferece **menus interativos** que permitem ao operador configurar parâmetros e navegar entre funções sem precisar reprogramar o Arduino.
+
+---
+
+### ⚙️ Funções das Teclas
+
+| 🔘 **Tecla** | 💡 **Função Principal** | 🧭 **Contexto de Uso** |
+|:-------------|:-----------------------|:------------------------|
+| **1, 2, 3** | Selecionam opções de menu | No menu principal, configurações e logs |
+| **A / B** | (Reservadas para expansão futura) | Não utilizadas no firmware atual |
+| **C** | ❌ Cancelar / Voltar | Retorna ao menu anterior ou cancela uma ação |
+| **D** | ✅ Confirmar / OK / Gravar | Confirma uma configuração, grava calibração ou silencia o alarme |
+| **\*** | 🔄 Limpar entrada | Apaga o valor digitado durante configuração de limites |
+| **#** | (Reservada) | Não utilizada no firmware atual |
+| **0–9** | 🔢 Entrada numérica | Inserção de valores para limites de temperatura, umidade e luz |
+
+---
+
+### 🧩 Modos de Operação do Sistema
+
+---
+
 ## 👥 Equipe
 
 - Giovanna Dias - 566647
@@ -72,7 +96,7 @@ O sistema realiza **leituras contínuas** das variáveis ambientais e atua confo
 
 O projeto foi simulado no Wokwi e apresentado em vídeo, mostrando o funcionamento completo do sistema e sua resposta às variações ambientais.
 #Link do vídeo no YouTube:
-#Link da simulação no Wokwi: https://wokwi.com/projects/446078572345766913
+#Link da simulação no Wokwi: https://wokwi.com/projects/446545010693389313
 
 ---
 
