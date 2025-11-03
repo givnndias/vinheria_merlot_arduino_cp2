@@ -1,10 +1,12 @@
-// Grupo: Merlot
-// Giovanna Oliveira Ferreira Dias RM: 566647
-// Maria Laura Pereira Druzeic RM: 566634
-// Marianne Mukai Nishikawa RM: 568001
-
 // -----------------------------------------------------------
 // Projeto MERLOT - Vinharia Agnello
+// GRUPO: Merlot
+// Equipe:
+// Maria Laura Pereira Druzeic RM: 566634
+// Giovanna Oliveira Ferreira Dias RM: 566647
+// Marianne Mukai Nishikawa RM: 568001
+// -----------------------------------------------------------
+
 // ===================================================================
 // SECÇÃO 1: BIBLIOTECAS, PINOS E DEFINIÇÕES GLOBAIS
 // ===================================================================
@@ -19,17 +21,19 @@
 
 // --- Opções de Configuração ---
 #define SERIAL_OPTION 1
-#define UTC_OFFSET    -3
+#define UTC_OFFSET    0
 #define LOG_INTERVAL_ALARM (10 * 60 * 1000UL)
 #define INTERVALO_CICLO_DISPLAY 4000 // Tempo para alternar display (4s)
+#define LCD_COLS 20 // Define colunas
+#define LCD_ROWS 4  // Define linhas
 
 // --- Definição dos Pinos ---
 #define LDR_PIN       A0
 #define LED_VERDE     2
 #define LED_AMARELO   3
 #define LED_VERMELHO  4
-#define BUZZER_PIN    A1
-#define DHTPIN        5
+#define BUZZER_PIN    A1 // Pino A1 para o Buzzer
+#define DHTPIN        5  // Pino 5 para o DHT
 #define DHTTYPE       DHT22
 
 // --- Enum para Menus e Ações ---
@@ -81,7 +85,8 @@ int proximoEnderecoLog = ADDR_LOG_START;
 struct LogEntry { uint32_t timestamp; float temperatura; float umidade; int16_t luz; };
 
 // --- Objetos de Hardware ---
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+// ATUALIZADO: Inicializa o LCD como 20x4
+LiquidCrystal_I2C lcd(0x27, LCD_COLS, LCD_ROWS);
 DHT dht(DHTPIN, DHTTYPE);
 RTC_DS3231 rtc;
 
@@ -104,12 +109,13 @@ MenuState menuAnterior = MENU_MONITOR;
 int gLogCount = 0;
 
 // --- Variáveis Globais para Input ---
-char gInputBuffer[9] = ""; int gInputIndex = 0;
+char gInputBuffer[10] = ""; // Aumentado ligeiramente
+int gInputIndex = 0;
 
 // --- Variáveis Globais de Timers ---
 unsigned long tempoLeituraCurta = 0;
 unsigned long tempoBuzzer = 0; bool estadoBuzzer = false; long intervaloBuzzer = 3000;
-unsigned long gMensagemTimer = 0; char gMensagemTexto[17] = "";
+unsigned long gMensagemTimer = 0; char gMensagemTexto[21] = ""; // Aumentado para 20 chars
 unsigned long gTempoUltimoLog = 0;
 unsigned long tempoCicloDisplay = 0;
 bool displayMostraValores = true;
@@ -149,7 +155,7 @@ void pararBuzzer();
 void gerenciarBuzzer(unsigned long agora);
 void executarAcao(MenuState acaoId);
 void lerSensores(unsigned long agora);
-void mostrarMensagem(const char* texto, int duracao);
+void mostrarMensagem(const char* texto, int duracao, int linha = 1); // Adiciona linha
 void limparInputBuffer();
 bool handleInput(char key, int16_t &configVar, int minimo, int maximo);
 void lcdPrintFixed(int col, int row, const char* text);
@@ -182,11 +188,46 @@ void setup() {
   lcd.createChar(3, emojiFeliz); lcd.createChar(4, tacaMetade); lcd.createChar(5, emojiSerio);
   lcd.createChar(6, tacaVazia); lcd.createChar(7, emojiTriste);
 
-  // --- Animação ---
-  lcd.clear(); lcd.setCursor(0, 0); lcd.print(F("MERLOT - Monitoramento"));
-  for (int i = 0; i < 7; i++) { lcd.setCursor(i, 1); lcd.write(byte(0)); delay(180); lcd.setCursor(i, 1); lcd.print(F(" ")); }
-  lcd.setCursor(7, 1); lcd.write(byte(2)); delay(250); lcd.setCursor(7, 1); lcd.write(byte(1)); delay(300); lcd.setCursor(7, 1); lcd.print(F(" ")); delay(180);
-  for (int i = 7; i < 16; i++) { lcd.setCursor(i, 1); lcd.write(byte(1)); delay(180); lcd.setCursor(i, 1); lcd.print(F(" ")); }
+  // --- Animação (Adaptada para 20x4) ---
+  lcd.clear(); lcd.setCursor(7, 0); lcd.print(F("MERLOT"));
+  for (int i = 0; i < 9; i++) { lcd.setCursor(i, 2); lcd.write(byte(0)); delay(180); lcd.setCursor(i, 2); lcd.print(F(" ")); }
+  lcd.setCursor(9, 2); lcd.write(byte(2)); delay(250);
+  lcd.setCursor(9, 2); lcd.write(byte(1)); delay(300);
+  lcd.setCursor(9, 2); lcd.print(F(" ")); delay(180);
+  for (int i = 9; i < LCD_COLS; i++) { lcd.setCursor(i, 2); lcd.write(byte(1)); delay(180); lcd.setCursor(i, 2); lcd.print(F(" ")); }
+
+  // Limpa a linha da animação anterior
+  lcdPrintFixed(0, 2, ""); 
+
+  for (int i = 0; i < 9; i++) { // Para 1 passo antes de colidirem
+    int posEsq = i; // Posição da taça esquerda (0 -> 8)
+    int posDir = (LCD_COLS - 1) - i; // Posição da taça direita (19 -> 11)
+
+    lcd.setCursor(posEsq, 3); lcd.write(byte(1)); // Desenha taça esquerda
+    lcd.setCursor(posDir, 3); lcd.write(byte(1)); // Desenha taça direita
+    
+    delay(100); // Velocidade do movimento
+    
+    // Apaga as taças para o próximo frame
+    lcd.setCursor(posEsq, 3); lcd.print(F(" ")); 
+    lcd.setCursor(posDir, 3); lcd.print(F(" "));
+  }
+  
+  // Desenha as taças na posição final (coluna 9 e 10)
+  lcd.setCursor(9, 3); lcd.write(byte(1));
+  lcd.setCursor(10, 3); lcd.write(byte(1));
+  
+  // Desenha o "Brinde" (brilho) acima delas, na linha 2
+  lcd.setCursor(9, 2); lcd.write(byte(2));
+  tone(BUZZER_PIN, 2000, 100); // Som de "brinde"
+  
+  delay(600); // Pausa para ver o brinde
+  
+  // Limpa as linhas da animação
+  lcdPrintFixed(0, 2, "");
+  lcdPrintFixed(0, 3, "");
+  delay(200);
+
 
   carregarConfiguracoes();
   proximoEnderecoLog = encontrarProximoLogAddr();
@@ -194,8 +235,18 @@ void setup() {
   #if SERIAL_OPTION
   Serial.print(F("Logs:")); Serial.println(gLogCount);
   #endif
-  if (gLogCount > 0) { EEPROM.get(proximoEnderecoLog - sizeof(LogEntry), gLastLog); }
-  else { gLastLog.timestamp = 0; }
+  if (gLogCount > 0) {
+      int ultimoLogAddr = (proximoEnderecoLog == ADDR_LOG_START) ?
+                          (ADDR_LOG_START + (gLogCount -1) * sizeof(LogEntry)) : // Correção aqui
+                          (proximoEnderecoLog - sizeof(LogEntry));
+       if (ultimoLogAddr >= ADDR_LOG_START) {
+          EEPROM.get(ultimoLogAddr, gLastLog);
+       } else {
+          gLastLog.timestamp = 0;
+       }
+  } else {
+       gLastLog.timestamp = 0;
+  }
 
   // Inicializa buffers de leitura
   for (int i = 0; i < NUM_LEITURAS; ++i) {
@@ -206,7 +257,7 @@ void setup() {
   int vl = analogRead(LDR_PIN);
   gMediaLuz = map(constrain(vl, cfgLdrMin, cfgLdrMax), cfgLdrMin, cfgLdrMax, 0, 100);
 
-  mostrarMensagem("Monitorando...", 2000);
+  mostrarMensagem("Monitorando...", 2000, 1);
   menuatual = MENU_MONITOR;
 }
 
@@ -236,14 +287,11 @@ void checkKeypad(unsigned long agora) {
   if (menuatual == MENU_ALARME_ATIVO && gEstadoFinal == 0) menuatual = MENU_PRINCIPAL;
 
   if (menuatual == ACAO_MOSTRAR_MSG) { gMensagemTimer = 0; menuatual = menuAnterior; return; }
-  if (menuatual == MENU_MONITOR && key) { // Modificado para verificar 'key'
+  if (menuatual == MENU_MONITOR && key) {
        menuatual = MENU_PRINCIPAL;
        menuAnterior = MENU_MONITOR;
-       // Não retorna aqui, deixa o switch processar a tecla se for C, 1, 2, 3...
   }
 
-
-  // --- Máquina de Estados ---
   switch (menuatual) {
     case MENU_PRINCIPAL:
       if (key == '1') menuatual = MENU_MONITOR;
@@ -273,15 +321,15 @@ void checkKeypad(unsigned long agora) {
     case ACAO_SET_UMID_ALERTA_MIN: if (handleInput(key, cfgUmidAlertaMin, 0, 100))  { EEPROM.put(ADDR_UMID_ALERTA_MIN, cfgUmidAlertaMin); menuatual = ACAO_SET_UMID_CRITICO_MIN; limparInputBuffer(); } break;
     case ACAO_SET_UMID_CRITICO_MIN: if (handleInput(key, cfgUmidCriticoMin, 0, 100)) { EEPROM.put(ADDR_UMID_CRITICO_MIN, cfgUmidCriticoMin); menuatual = ACAO_SET_UMID_ALERTA_MAX; limparInputBuffer(); } break;
     case ACAO_SET_UMID_ALERTA_MAX: if (handleInput(key, cfgUmidAlertaMax, 0, 100))  { EEPROM.put(ADDR_UMID_ALERTA_MAX, cfgUmidAlertaMax); menuatual = ACAO_SET_UMID_CRITICO_MAX; limparInputBuffer(); } break;
-    case ACAO_SET_UMID_CRITICO_MAX: if (handleInput(key, cfgUmidCriticoMax, 0, 100)) { EEPROM.put(ADDR_UMID_CRITICO_MAX, cfgUmidCriticoMax); mostrarMensagem("Limites Salvos!", 2000); menuatual = menuAnterior; limparInputBuffer(); } break;
+    case ACAO_SET_UMID_CRITICO_MAX: if (handleInput(key, cfgUmidCriticoMax, 0, 100)) { EEPROM.put(ADDR_UMID_CRITICO_MAX, cfgUmidCriticoMax); mostrarMensagem("Limites Salvos!", 2000, 2); menuatual = menuAnterior; limparInputBuffer(); } break;
 
     // --- Ações (Calibração) ---
     case ACAO_CALIBRA_LDR_MIN: if (key == 'D') { cfgLdrMin = calcularMediaAnalog(LDR_PIN, 10); EEPROM.put(ADDR_LDR_MIN, cfgLdrMin); menuatual = ACAO_CALIBRA_LDR_MAX; } else if (key == 'C') menuatual = menuAnterior; break;
-    case ACAO_CALIBRA_LDR_MAX: if (key == 'D') { cfgLdrMax = calcularMediaAnalog(LDR_PIN, 10); EEPROM.put(ADDR_LDR_MAX, cfgLdrMax); mostrarMensagem("LDR Calibrado!", 2000); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
+    case ACAO_CALIBRA_LDR_MAX: if (key == 'D') { cfgLdrMax = calcularMediaAnalog(LDR_PIN, 10); EEPROM.put(ADDR_LDR_MAX, cfgLdrMax); mostrarMensagem("LDR Calibrado!", 2000, 2); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
 
     // --- Ações (Confirmação) ---
-    case ACAO_RESET_CONFIRMA:  if (key == 'D') { restaurarPadroes(); mostrarMensagem("Resetado!", 2000); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
-    case ACAO_LIMPAR_LOG_CONF: if (key == 'D') { limparLogsEEPROM(); mostrarMensagem("Logs Limpos!", 2000); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
+    case ACAO_RESET_CONFIRMA:  if (key == 'D') { restaurarPadroes(); mostrarMensagem("Resetado!", 2000, 2); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
+    case ACAO_LIMPAR_LOG_CONF: if (key == 'D') { limparLogsEEPROM(); mostrarMensagem("Logs Limpos!", 2000, 2); menuatual = menuAnterior; } else if (key == 'C') menuatual = menuAnterior; break;
 
     // --- Telas Estáticas ---
     case ACAO_VER_LOG:         if (key == 'C') menuatual = menuAnterior; break;
@@ -292,7 +340,7 @@ void executarAcao(MenuState acaoId) {
     switch(acaoId) {
         case ACAO_DEBUG_SERIAL:
             debugEEPROM();
-            mostrarMensagem("Debug no Serial", 2000);
+            mostrarMensagem("Debug no Serial", 2000, 2);
             menuatual = MENU_LOGS;
             break;
         default:
@@ -305,107 +353,222 @@ void executarAcao(MenuState acaoId) {
 void atualizarDisplay(unsigned long agora) {
   static MenuState menuAnteriorDisplay = (MenuState)-1;
   static unsigned long tempoUltimoRefresh = 0;
-  static bool displayNeedsClear = true; // Inicia true para limpar na primeira vez
+  static bool displayNeedsClear = true;
 
-  // --- Lógica para alternar display a cada 4 segundos ---
+  // --- Lógica para alternar display a cada INTERVALO_CICLO_DISPLAY ---
   if (menuatual == MENU_MONITOR && agora - tempoCicloDisplay >= INTERVALO_CICLO_DISPLAY) {
       displayMostraValores = !displayMostraValores;
       tempoCicloDisplay = agora;
-      menuAnteriorDisplay = (MenuState)-1; // Força redesenho
-      displayNeedsClear = true; // Marca para limpar
+      menuAnteriorDisplay = (MenuState)-1;
+      displayNeedsClear = true;
   }
+
 
   if (menuatual == ACAO_MOSTRAR_MSG) {
     if (agora > gMensagemTimer) { menuatual = menuAnterior; menuAnteriorDisplay = (MenuState)-1; displayNeedsClear = true;}
     if (menuAnteriorDisplay != ACAO_MOSTRAR_MSG) {
       lcd.clear();
-      lcdPrintFixed(0, 0, F("!---------------!"));
+      // Linha 0 e 3 com borda, 1 e 2 com mensagem
+      lcdPrintFixed(0, 0, F("********************"));
       lcdPrintFixed(0, 1, gMensagemTexto);
+      lcdPrintFixed(0, 2, F("")); // Limpa linha 2
+      lcdPrintFixed(0, 3, F("********************"));
       menuAnteriorDisplay = ACAO_MOSTRAR_MSG;
     } return;
   }
 
   bool forcarRefresh = (agora - tempoUltimoRefresh > 1000);
   if (menuatual >= ACAO_SET_LUZ_ALERTA && menuatual <= ACAO_SET_UMID_CRITICO_MAX) forcarRefresh = true;
+  if (menuatual == MENU_MONITOR) forcarRefresh = true;
 
-  // Só redesenha se o menu mudou ou se forçou refresh
   if (menuatual == menuAnteriorDisplay && !forcarRefresh) return;
 
-  // Limpa o LCD apenas se o menu mudou (ou se forçado pela flag)
   if (menuatual != menuAnteriorDisplay || displayNeedsClear) {
-      lcd.clear();
-      displayNeedsClear = false; // Reseta a flag
+      if(!(menuatual == MENU_MONITOR && menuAnteriorDisplay == MENU_MONITOR)) {
+           lcd.clear();
+      }
+      displayNeedsClear = false;
   }
 
   menuAnteriorDisplay = menuatual; tempoUltimoRefresh = agora;
 
-  char linha1[17] = ""; char linha2[17] = ""; char bufferAux[10];
+  char linha1[21] = ""; char linha2[21] = ""; char linha3[21] = ""; char linha4[21] = "";
 
   DateTime utcTime = rtc.now();
   DateTime localTime = DateTime(utcTime.unixtime() + (UTC_OFFSET * 3600L));
 
   switch (menuatual) {
     case MENU_MONITOR:
-      if (displayMostraValores) {
-          char tempStr[6], umidStr[6];
-          dtostrf(gMediaTemp, 4, 1, tempStr);
-          dtostrf(gMediaUmid, 4, 1, umidStr);
-          sprintf(linha1, "L:%d%% T:%sC", (int)gMediaLuz, tempStr);
-          sprintf(linha2, "U:%s%%     %02d:%02d", umidStr, localTime.hour(), localTime.minute());
-      } else {
-          strcpy_P(linha1, PSTR("Luz:      T:"));
-          strcpy_P(linha2, PSTR("U:"));
-      }
+        if (displayMostraValores) {
+            // --- Ecrã 1: Valores (Layout 20x4) ---
+            char tempStr[6], umidStr[6];
+            dtostrf(gMediaTemp, 4, 1, tempStr);
+            dtostrf(gMediaUmid, 4, 1, umidStr);
+            sprintf(linha1, "Luz: %d%%", (int)gMediaLuz);
+            sprintf(linha2, "Temp: %s C", tempStr);
+            sprintf(linha3, "Umid: %s %%", umidStr);
+            sprintf(linha4, "%02d/%02d/%04d   %02d:%02d", localTime.day(), localTime.month(), localTime.year(), localTime.hour(), localTime.minute());
+        } else {
+            // --- Ecrã 2: Status (Layout 20x4) ---
+            strcpy_P(linha1, PSTR("Status Sensores"));
+            strcpy_P(linha2, PSTR("Luz:"));
+            strcpy_P(linha3, PSTR("Temp:"));
+            strcpy_P(linha4, PSTR("Umid:"));
+        }
+        break;
+
+    case MENU_PRINCIPAL:
+      strcpy_P(linha1, PSTR("Menu Principal"));
+      strcpy_P(linha2, PSTR("1.Monitoramento"));
+      strcpy_P(linha3, PSTR("2.Configuracoes"));
+      strcpy_P(linha4, PSTR("3.Logs EEPROM"));
       break;
-    case MENU_PRINCIPAL:    strcpy_P(linha1, PSTR("Menu Principal")); strcpy_P(linha2, PSTR("1.Monitor 2.Cfg 3.Log")); break;
-    case MENU_CONFIG:       strcpy_P(linha1, PSTR("Configuracoes")); strcpy_P(linha2, PSTR("1.Limites 2.LDR 3.Rst")); break;
+      
+    case MENU_CONFIG:
+      strcpy_P(linha1, PSTR("Configuracoes"));
+      strcpy_P(linha2, PSTR("1.Definir Limites"));
+      strcpy_P(linha3, PSTR("2.Calibrar LDR"));
+      strcpy_P(linha4, PSTR("3.Reset Fabrica"));
+      break;
+
     case MENU_LOGS:
       strcpy_P(linha1, PSTR("Logs EEPROM"));
-      sprintf(linha2, "1.Ver(%d) 2.Limp 3.Dbg", gLogCount);
+      sprintf(linha2, "1.Ver Ultimo Log (%d)", gLogCount);
+      strcpy_P(linha3, PSTR("2.Limpar Logs"));
+      strcpy_P(linha4, PSTR("3.Debug Serial"));
       break;
+
     case ACAO_VER_LOG:
-      strcpy_P(linha1, PSTR("Ultimo Alarme:"));
-      if (gLastLog.timestamp == 0) { strcpy_P(linha2, PSTR("Nenhum log salvo")); }
-      else {
+      strcpy_P(linha1, PSTR("Ultimo Alarme"));
+      if (gLastLog.timestamp == 0) {
+          strcpy_P(linha2, PSTR("Nenhum log salvo"));
+      } else {
+          DateTime logTime(gLastLog.timestamp + (UTC_OFFSET * 3600L));
+          sprintf(linha2, "%02d/%02d/%02d   %02d:%02d", logTime.day(), logTime.month(), logTime.year() % 100, logTime.hour(), logTime.minute());
+          
           char tempStrLog[6], umidStrLog[6];
           dtostrf(gLastLog.temperatura, 4, 0, tempStrLog);
           dtostrf(gLastLog.umidade, 4, 0, umidStrLog);
-          sprintf(linha2, "T:%s U:%s L:%d", tempStrLog, umidStrLog, gLastLog.luz);
+          sprintf(linha3, "T:%sC U:%s%% L:%d%%", tempStrLog, umidStrLog, gLastLog.luz);
+          strcpy_P(linha4, PSTR("(C=Voltar)"));
       }
       break;
+      
     case MENU_ALARME_ATIVO:
-      strcpy_P(linha1, PSTR("ALARME ATIVO"));
-      strcpy(linha2, "");
-      if(gEstadoLuz != 0) strcat_P(linha2, PSTR("Luz!"));
-      if(gEstadoTemp != 0) strcat_P(linha2, PSTR("Temp!"));
-      if(gEstadoUmid != 0) strcat_P(linha2, PSTR("Umid!"));
+      strcpy_P(linha1, PSTR("********************"));
+      strcpy_P(linha2, PSTR("ALARME ATIVO!"));
+      // Mostra quais sensores estão em alarme
+      if(gEstadoLuz != 0) strcat_P(linha3, PSTR("Luz!"));
+      if(gEstadoTemp != 0) strcat_P(linha3, PSTR("Temp!"));
+      if(gEstadoUmid != 0) strcat_P(linha3, PSTR("Umid!"));
+      strcpy_P(linha4, PSTR("Pressione D p/Silenciar"));
       break;
-    // --- Telas de Input/Confirmação ---
-    case ACAO_SET_LUZ_ALERTA:   strcpy_P(linha1, PSTR("Luz Alerta")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_LUZ_CRITICO:  strcpy_P(linha1, PSTR("Luz Critico")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_TEMP_ALERTA_MIN: strcpy_P(linha1, PSTR("Temp Alerta MIN")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_TEMP_CRITICO_MIN: strcpy_P(linha1, PSTR("Temp Critico MIN")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_TEMP_ALERTA_MAX: strcpy_P(linha1, PSTR("Temp Alerta MAX")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_TEMP_CRITICO_MAX: strcpy_P(linha1, PSTR("Temp Critico MAX")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_UMID_ALERTA_MIN: strcpy_P(linha1, PSTR("Umid Alerta MIN")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_UMID_CRITICO_MIN: strcpy_P(linha1, PSTR("Umid Critico MIN")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_UMID_ALERTA_MAX: strcpy_P(linha1, PSTR("Umid Alerta MAX")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_SET_UMID_CRITICO_MAX: strcpy_P(linha1, PSTR("Umid Critico MAX")); strcpy(linha2, gInputBuffer); break;
-    case ACAO_CALIBRA_LDR_MIN: strcpy_P(linha1, PSTR("Apague a luz...")); strcpy_P(linha2, PSTR("Pressione D")); break;
-    case ACAO_CALIBRA_LDR_MAX: strcpy_P(linha1, PSTR("Acenda a luz...")); strcpy_P(linha2, PSTR("Pressione D")); break;
-    case ACAO_RESET_CONFIRMA:  strcpy_P(linha1, PSTR("Resetar? D=Sim")); strcpy_P(linha2, PSTR("(C=Nao)")); break;
-    case ACAO_LIMPAR_LOG_CONF: strcpy_P(linha1, PSTR("Limpar Logs? D=Sim")); strcpy_P(linha2, PSTR("(C=Nao)")); break;
+      
+    // --- Telas de Input ---
+    // (Todas agora usam 4 linhas para mais clareza)
+    case ACAO_SET_LUZ_ALERTA:   
+      strcpy_P(linha1, PSTR("Definir Limite(Luz)"));
+      strcpy_P(linha2, PSTR("Luz Alerta (0-100):"));
+      strcpy(linha3, gInputBuffer); // Linha de input
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_LUZ_CRITICO:  
+      strcpy_P(linha1, PSTR("Definir Limite(Luz)"));
+      strcpy_P(linha2, PSTR("Luz Critico (0-100):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_TEMP_ALERTA_MIN: 
+      strcpy_P(linha1, PSTR("Definir Limite(Temp)"));
+      strcpy_P(linha2, PSTR("Alerta MIN (-10~20):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_TEMP_CRITICO_MIN: 
+      strcpy_P(linha1, PSTR("Definir Limite(Temp)"));
+      strcpy_P(linha2, PSTR("Critico MIN (-10~20):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_TEMP_ALERTA_MAX: 
+      strcpy_P(linha1, PSTR("Definir Limite(Temp)"));
+      strcpy_P(linha2, PSTR("Alerta MAX (0~50):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_TEMP_CRITICO_MAX: 
+      strcpy_P(linha1, PSTR("Definir Limite(Temp)"));
+      strcpy_P(linha2, PSTR("Critico MAX (0~50):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_UMID_ALERTA_MIN: 
+      strcpy_P(linha1, PSTR("Definir Limite (Umid)"));
+      strcpy_P(linha2, PSTR("Alerta MIN (0~100):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_UMID_CRITICO_MIN: 
+      strcpy_P(linha1, PSTR("Definir Limite(Umid)"));
+      strcpy_P(linha2, PSTR("Critico MIN (0~100):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_UMID_ALERTA_MAX: 
+      strcpy_P(linha1, PSTR("Definir Limite(Umid)"));
+      strcpy_P(linha2, PSTR("Alerta MAX (0~100):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+    case ACAO_SET_UMID_CRITICO_MAX: 
+      strcpy_P(linha1, PSTR("Definir Limite(Umid)"));
+      strcpy_P(linha2, PSTR("Critico MAX (0~100):"));
+      strcpy(linha3, gInputBuffer);
+      strcpy_P(linha4, PSTR("(*=Limpa C=Sai D=OK)"));
+      break;
+      
+    case ACAO_CALIBRA_LDR_MIN: 
+      strcpy_P(linha1, PSTR("Calibrar LDR"));
+      strcpy_P(linha2, PSTR("Apague a luz..."));
+      strcpy_P(linha3, PSTR("Pressione D p/gravar"));
+      strcpy_P(linha4, PSTR("(C=Cancelar)"));
+      break;
+    case ACAO_CALIBRA_LDR_MAX: 
+      strcpy_P(linha1, PSTR("Calibrar LDR"));
+      strcpy_P(linha2, PSTR("Acenda a luz..."));
+      strcpy_P(linha3, PSTR("Pressione D p/gravar"));
+      strcpy_P(linha4, PSTR("(C=Cancelar)"));
+      break;
+      
+    case ACAO_RESET_CONFIRMA:  
+      strcpy_P(linha1, PSTR("Confirmacao"));
+      strcpy_P(linha2, PSTR("Resetar p/ Fabrica?"));
+      strcpy_P(linha3, PSTR(""));
+      strcpy_P(linha4, PSTR("(D = Sim) (C = Nao)"));
+      break;
+    case ACAO_LIMPAR_LOG_CONF: 
+      strcpy_P(linha1, PSTR("Confirmacao"));
+      strcpy_P(linha2, PSTR("Limpar todos os Logs?"));
+      strcpy_P(linha3, PSTR(""));
+      strcpy_P(linha4, PSTR("(D = Sim) (C = Nao)"));
+      break;
   }
 
-  // Desenha as linhas principais
-  lcdPrintFixed(0, 0, linha1);
-  lcdPrintFixed(0, 1, linha2);
-
-  // Desenha ícones se estiver no modo Monitor de Status
-  if (menuatual == MENU_MONITOR && !displayMostraValores) {
-      desenharStatusIndividual(4, 0, gEstadoLuz);
-      desenharStatusIndividual(11, 0, gEstadoTemp);
-      desenharStatusIndividual(2, 1, gEstadoUmid);
+  // Desenha as linhas (exceto para o modo Monitor de Status)
+  if (!(menuatual == MENU_MONITOR && !displayMostraValores)) {
+      lcdPrintFixed(0, 0, linha1);
+      lcdPrintFixed(0, 1, linha2);
+      lcdPrintFixed(0, 2, linha3);
+      lcdPrintFixed(0, 3, linha4);
+  } else {
+      // Desenha ícones (modo Monitor de Status)
+      lcdPrintFixed(0, 0, linha1); // Título
+      desenharStatusIndividual(0, 1, gEstadoLuz); // Linha 1
+      lcdPrintFixed(5, 1, F("Luz"));
+      desenharStatusIndividual(0, 2, gEstadoTemp); // Linha 2
+      lcdPrintFixed(5, 2, F("Temperatura"));
+      desenharStatusIndividual(0, 3, gEstadoUmid); // Linha 3
+      lcdPrintFixed(5, 3, F("Umidade"));
   }
 }
 
@@ -418,18 +581,19 @@ bool handleInput(char key, int16_t &configVar, int minimo, int maximo) {
     if (gInputIndex == 0) return false;
     int num = atoi(gInputBuffer);
     if (num >= minimo && num <= maximo) { configVar = (int16_t)num; tone(BUZZER_PIN, 1500, 100); return true; }
-    else { mostrarMensagem("Valor Invalido!", 2000); menuatual = menuAnterior; limparInputBuffer(); }
+    else { mostrarMensagem("Valor Invalido!", 2000, 2); menuatual = menuAnterior; limparInputBuffer(); }
   } return false;
 }
 
 void limparInputBuffer() { gInputBuffer[0] = '\0'; gInputIndex = 0; }
 
-void mostrarMensagem(const char* texto, int duracao) {
-  strncpy(gMensagemTexto, texto, 16);
-  gMensagemTexto[16] = '\0';
+void mostrarMensagem(const char* texto, int duracao, int linha = 1) { // linha 1 ou 2
+  strncpy(gMensagemTexto, texto, 20); // Aumentado para 20
+  gMensagemTexto[20] = '\0';
   gMensagemTimer = millis() + duracao;
   menuAnterior = menuatual;
   menuatual = ACAO_MOSTRAR_MSG;
+  // (A lógica de desenhar a mensagem foi movida para atualizarDisplay)
 }
 
 // ===================================================================
@@ -443,12 +607,10 @@ void lerSensores(unsigned long agora) {
   float valorTemp = dht.readTemperature();
   float valorUmid = dht.readHumidity();
 
-  // Tratamento de NaN usando valor anterior
   if (!isnan(valorTemp)) { leiturasTemp[indiceLeitura] = valorTemp; }
   else { leiturasTemp[indiceLeitura] = leiturasTemp[(indiceLeitura + NUM_LEITURAS -1) % NUM_LEITURAS]; }
   if (!isnan(valorUmid)) { leiturasUmid[indiceLeitura] = valorUmid; }
   else { leiturasUmid[indiceLeitura] = leiturasUmid[(indiceLeitura + NUM_LEITURAS -1) % NUM_LEITURAS]; }
-
 
   int valorCalibrado = constrain(valorLido, cfgLdrMin, cfgLdrMax);
   leiturasLuz[indiceLeitura] = map(valorCalibrado, cfgLdrMin, cfgLdrMax, 0, 100);
@@ -530,7 +692,7 @@ int avaliarUmidade(float umid) {
 // ===================================================================
 void restaurarPadroes() {
   #if SERIAL_OPTION
-  Serial.println(F("Restaurando..."));
+  Serial.println(F("Restaurando padroes EEPROM..."));
   #endif
   EEPROM.put(ADDR_LDR_MIN, (int16_t)50); EEPROM.put(ADDR_LDR_MAX, (int16_t)974);
   EEPROM.put(ADDR_LUZ_ALERTA, (int16_t)20); EEPROM.put(ADDR_LUZ_CRITICO, (int16_t)40);
@@ -578,29 +740,29 @@ void limparLogsEEPROM() {
 
 void debugEEPROM() {
   #if SERIAL_OPTION
-  Serial.println(F("DEBUG"));
-  Serial.print(F("Config Version:")); Serial.println(CONFIG_VERSION);
-  Serial.print(F("LDR:")); Serial.print(cfgLdrMin); Serial.print(F("/")); Serial.println(cfgLdrMax);
-  Serial.print(F("Luz:")); Serial.print(cfgLuzAlerta); Serial.print(F("/")); Serial.println(cfgLuzCritico);
-  Serial.print(F("Temp Alerta:")); Serial.print(cfgTempAlertaMin); Serial.print(F("/")); Serial.println(cfgTempAlertaMax);
-  Serial.print(F("Temp Critico:")); Serial.print(cfgTempCriticoMin); Serial.print(F("/")); Serial.println(cfgTempCriticoMax);
-  Serial.print(F("Umid Alerta:")); Serial.print(cfgUmidAlertaMin); Serial.print(F("/")); Serial.println(cfgUmidAlertaMax);
-  Serial.print(F("Umid Critico:")); Serial.print(cfgUmidCriticoMin); Serial.print(F("/")); Serial.println(cfgUmidCriticoMax);
+  Serial.println(F("===== DEBUG EEPROM ====="));
+  Serial.print(F("Config Version: ")); Serial.println(CONFIG_VERSION);
+  Serial.print(F("LDR Min/Max: ")); Serial.print(cfgLdrMin); Serial.print(F("/")); Serial.println(cfgLdrMax);
+  Serial.print(F("Luz Alerta/Critico: ")); Serial.print(cfgLuzAlerta); Serial.print(F("/")); Serial.println(cfgLuzCritico);
+  Serial.print(F("Temp Alerta Min/Max: ")); Serial.print(cfgTempAlertaMin); Serial.print(F("/")); Serial.println(cfgTempAlertaMax);
+  Serial.print(F("Temp Critico Min/Max: ")); Serial.print(cfgTempCriticoMin); Serial.print(F("/")); Serial.println(cfgTempCriticoMax);
+  Serial.print(F("Umid Alerta Min/Max: ")); Serial.print(cfgUmidAlertaMin); Serial.print(F("/")); Serial.println(cfgUmidAlertaMax);
+  Serial.print(F("Umid Critico Min/Max: ")); Serial.print(cfgUmidCriticoMin); Serial.print(F("/")); Serial.println(cfgUmidCriticoMax);
 
   int count = contarLogs();
-  Serial.print(F("\n LOGS ")); Serial.print(count); Serial.println(F(") ====="));
+  Serial.print(F("\ LOGS (")); Serial.print(count); Serial.println(F(") ====="));
   if (count == 0) { Serial.println(F("Nenhum log salvo.")); return; }
   int endereco = ADDR_LOG_START; LogEntry log;
   for(int i = 0; i < count; i++) {
     EEPROM.get(endereco, log); DateTime dt(log.timestamp);
-    Serial.print(F("LOG")); Serial.print(i + 1); Serial.print(F("] "));
+    Serial.print(F("[LOG ")); Serial.print(i + 1); Serial.print(F("] "));
     DateTime localLogTime = DateTime(log.timestamp + (UTC_OFFSET * 3600L));
     Serial.print(localLogTime.timestamp(DateTime::TIMESTAMP_FULL));
-    Serial.print(F("L:")); Serial.print(log.luz); Serial.print(F("T:")); Serial.print(log.temperatura); Serial.print(F("U:")); Serial.println(log.umidade);
+    Serial.print(F(" L:")); Serial.print(log.luz); Serial.print(F(" T:")); Serial.print(log.temperatura); Serial.print(F(" U:")); Serial.println(log.umidade);
     endereco += sizeof(LogEntry);
   }
   #else
-  mostrarMensagem("Use Serial Monitor", 2000);
+  mostrarMensagem("Use Serial Monitor", 2000, 2);
   #endif
 }
 
@@ -644,28 +806,32 @@ float calcularMedia(float arr[], int tamanho) {
     if (tamanho <= 0) return 0.0;
     float soma = 0.0;
     int amostrasValidas = 0;
-    // Usa a flag bufferCheio ou indiceLeitura para determinar quantas amostras usar
     int limite = bufferCheio ? NUM_LEITURAS : indiceLeitura;
 
-    if (limite == 0) { // Fallback inicial (antes da primeira leitura completa)
-        // Retorna a última média calculada ou um valor inicial seguro
-        if (arr == leiturasLuz) return gMediaLuz; // Usa a última média válida
+    if (limite == 0) {
+        if (arr == leiturasLuz) return gMediaLuz;
         if (arr == leiturasTemp) return isnan(gMediaTemp) ? 15.0 : gMediaTemp;
         if (arr == leiturasUmid) return isnan(gMediaUmid) ? 50.0 : gMediaUmid;
         return 0.0;
     }
 
     for (int i = 0; i < limite; i++) {
-        // Assume que NaN foi substituído por valor anterior em lerSensores
-        soma += arr[i];
-        amostrasValidas++;
+        if (!isnan(arr[i])) {
+            soma += arr[i];
+            amostrasValidas++;
+        }
     }
 
-    if (amostrasValidas == 0) return 0.0; // Segurança
+    if (amostrasValidas == 0) {
+       if (arr == leiturasLuz) return gMediaLuz;
+       if (arr == leiturasTemp) return isnan(gMediaTemp) ? 15.0 : gMediaTemp;
+       if (arr == leiturasUmid) return isnan(gMediaUmid) ? 50.0 : gMediaUmid;
+       return 0.0;
+    }
     return soma / (float)amostrasValidas;
 }
 
-// --- NOVO: Função auxiliar para desenhar status individual ---
+
 void desenharStatusIndividual(int col, int row, int estado) {
   lcd.setCursor(col, row);
   if (estado == 0) { // OK
@@ -675,8 +841,6 @@ void desenharStatusIndividual(int col, int row, int estado) {
   } else { // CRITICO
     lcd.write(byte(6)); lcd.print(F(" ")); lcd.write(byte(7));
   }
-  // Limpa os próximos 2 caracteres para garantir que não fique lixo
-  // lcd.print(F("  ")); // Removido pois lcdPrintFixed faz isso
 }
 
 
@@ -691,28 +855,17 @@ void gerenciarBuzzer(unsigned long agora) {
   else tempoBuzzer = agora;
 }
 
-// --- REFINAMENTO: Função otimizada para display suave ---
 void lcdPrintFixed(int col, int row, const char* text) {
   lcd.setCursor(col, row);
   int len = strlen(text);
-  // Imprime o texto
-  for (int i = 0; i < len && (col + i) < 16; i++) {
-      lcd.print(text[i]);
-  }
-  // Limpa o resto da linha
-  for (int i = len; (col + i) < 16; i++) {
-    lcd.print(F(" "));
-  }
+  for (int i = 0; i < len && (col + i) < LCD_COLS; i++) lcd.print(text[i]);
+  for (int i = len; (col + i) < LCD_COLS; i++) lcd.print(F(" "));
 }
 void lcdPrintFixed(int col, int row, const __FlashStringHelper* text) {
     lcd.setCursor(col, row);
     int len = strlen_P((const char*)text);
-    // Imprime o texto da Flash
-    for (int i = 0; i < len && (col + i) < 16; i++) {
-        lcd.print((char)pgm_read_byte_near(((const char*)text) + i));
-    }
-    // Limpa o resto da linha
-    for (int i = len; (col + i) < 16; i++) {
-        lcd.print(F(" "));
-    }
+    for (int i = 0; i < len && (col + i) < LCD_COLS; i++) lcd.print((char)pgm_read_byte_near(((const char*)text) + i));
+    for (int i = len; (col + i) < LCD_COLS; i++) lcd.print(F(" "));
 }
+
+

@@ -29,7 +29,7 @@ Utilizando um **Arduino Uno**, sensores de **temperatura**, **umidade** e **lumi
 
 ## 🧩 Diagrama de Montagem
 
-![Diagrama de Montagem](https://raw.githubusercontent.com/givnndias/vinheria_merlot_arduino_cp2/main/vinheria_merlot_wokwi.png)
+![Diagrama de Montagem](https://raw.githubusercontent.com/givnndias/vinheria_merlot_arduino_cp2/main/arduino.png)
 
 📷 *Figura 1 – Diagrama de montagem do circuito no Wokwi (Merlot, 2025)*
 
