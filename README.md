@@ -71,16 +71,10 @@ O **diferencial do software da Vinheria Merlot** está na integração entre o *
 | 🔘 **Tecla** | 💡 **Função Principal** | 🧭 **Contexto de Uso** |
 |:-------------|:-----------------------|:------------------------|
 | **1, 2, 3** | Selecionam opções de menu | No menu principal, configurações e logs |
-| **A / B** | (Reservadas para expansão futura) | Não utilizadas no firmware atual |
 | **C** | ❌ Cancelar / Voltar | Retorna ao menu anterior ou cancela uma ação |
 | **D** | ✅ Confirmar / OK / Gravar | Confirma uma configuração, grava calibração ou silencia o alarme |
 | **\*** | 🔄 Limpar entrada | Apaga o valor digitado durante configuração de limites |
-| **#** | (Reservada) | Não utilizada no firmware atual |
 | **0–9** | 🔢 Entrada numérica | Inserção de valores para limites de temperatura, umidade e luz |
-
----
-
-### 🧩 Modos de Operação do Sistema
 
 ---
 
