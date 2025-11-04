@@ -89,7 +89,7 @@ O **diferencial do software da Vinheria Merlot** está na integração entre o *
 ## 📽️ Demonstração
 
 O projeto foi simulado no Wokwi e apresentado em vídeo, mostrando o funcionamento completo do sistema e sua resposta às variações ambientais.
-#Link do vídeo no YouTube:
+#Link do vídeo no YouTube: https://youtu.be/oxRrFw41fAg?si=_18mU42zDdmPIXyV
 #Link da simulação no Wokwi: https://wokwi.com/projects/446545010693389313
 
 ---
